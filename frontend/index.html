@@ -273,7 +273,7 @@
     <div class="card">
       <div class="card-title"><div class="cicon" style="background:#fef3c7">🔌</div> Ganache connection</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem">
-        <div class="metric"><div class="mlbl">RPC endpoint</div><div class="mval" style="font-size:.9rem;font-family:monospace" id="rpcDisplay">http://127.0.0.1:7545</div></div>
+        <div class="metric"><div class="mlbl">RPC endpoint</div><div class="mval" style="font-size:.9rem;font-family:monospace" id="rpcDisplay">http://127.0.0.1:8545</div></div>
         <div class="metric"><div class="mlbl">Chain ID</div><div class="mval" id="chainIdDisplay">—</div></div>
         <div class="metric"><div class="mlbl">Block number</div><div class="mval" id="blockDisplay">—</div></div>
         <div class="metric"><div class="mlbl">Wallet balance</div><div class="mval" id="balDisplay">—</div></div>
@@ -290,14 +290,14 @@
       <div class="tip-box">
         <strong>Ganache setup:</strong><br/>
         1. Open Ganache app → New Workspace → add <code>truffle-config.js</code><br/>
-        2. Set RPC Server to <code>HTTP://127.0.0.1:7545</code><br/>
+        2. Set RPC Server to <code>HTTP://127.0.0.1:8545</code><br/>
         3. Run <code>npm run migrate</code> in terminal<br/>
         4. Paste the deployed contract address below
       </div>
 
       <div class="field"><label>NLP API URL</label><input id="cfgApi" value="http://localhost:8000" oninput="CFG.api=this.value"/></div>
       <div class="field"><label>Contract address (from truffle migrate output)</label><input id="cfgContract" placeholder="0x..." oninput="CFG.contract=this.value.trim()"/></div>
-      <div class="field"><label>Ganache RPC URL</label><input id="cfgRpc" value="http://127.0.0.1:7545" oninput="CFG.rpc=this.value"/></div>
+      <div class="field"><label>Ganache RPC URL</label><input id="cfgRpc" value="http://127.0.0.1:8545" oninput="CFG.rpc=this.value"/></div>
 
       <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.8rem">
         <button class="btn btn-outline" onclick="testApi()">Test NLP API</button>
@@ -313,13 +313,13 @@
         networks: {<br/>
         &nbsp;&nbsp;development: {<br/>
         &nbsp;&nbsp;&nbsp;&nbsp;host: "127.0.0.1",<br/>
-        &nbsp;&nbsp;&nbsp;&nbsp;port: 7545,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← Ganache GUI port<br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;port: 8545,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← Ganache GUI port<br/>
         &nbsp;&nbsp;&nbsp;&nbsp;network_id: "5777",&nbsp;&nbsp;← Ganache GUI network ID<br/>
         &nbsp;&nbsp;}<br/>
         }
       </div>
       <div style="font-size:.78rem;color:var(--muted);margin-top:.6rem">
-        In Ganache app → Settings → Server — make sure port matches 7545 and network ID matches 5777.
+        In Ganache app → Settings → Server — make sure port matches 8545 and network ID matches 5777.
       </div>
     </div>
   </div>
@@ -329,7 +329,7 @@
 
 <script>
 // ── Config ───────────────────────────────────────────────────
-const CFG = { api:"http://localhost:8000", contract:"", rpc:"http://127.0.0.1:7545" };
+const CFG = { api:"http://localhost:8000", contract:"", rpc:"http://127.0.0.1:8545" };
 
 // Auto-load contract address if deploy script wrote it
 try { if(typeof CONTRACT_ADDRESS!=="undefined") CFG.contract=CONTRACT_ADDRESS; } catch(e){}
