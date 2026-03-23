@@ -143,9 +143,10 @@ async def analyze(
     Returns: readability, bloom levels, bias flags, hashes.
     """
     file_bytes = await file.read()
+    filename = file.filename or "unknown.txt"
 
     # Extract text
-    text = extract_text(file_bytes, file.filename)
+    text = extract_text(file_bytes, filename)
     if len(text.strip()) < 20:
         raise HTTPException(400, "Could not extract text from file — ensure it's a readable PDF/DOCX/TXT.")
 

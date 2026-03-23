@@ -1,4 +1,4 @@
-#!/Users/bindhusree/BlockChain/quizlens/nlp/venv/bin/python3.11
+#!/Users/bindhusree/BlockChain/quizlens-dapp/nlp/venv/bin/python3
 import sys
 from pygments.cmdline import main
 if __name__ == '__main__':

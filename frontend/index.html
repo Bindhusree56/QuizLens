@@ -3,446 +3,2361 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>QuizLens — Ganache Edition</title>
+  <title>QuizLens — NLP Question Analyzer</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
   <style>
-    :root{
-      --bg:#f8fafc;--surface:#fff;--border:#e2e8f0;
-      --accent:#2563eb;--success:#16a34a;--error:#dc2626;--warn:#d97706;
-      --text:#0f172a;--muted:#64748b;--light:#f1f5f9;
-      --purple:#7c3aed;--teal:#0f766e;
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface-2: #1a1a25;
+      --border: #2a2a3a;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --success: #22c55e;
+      --error: #ef4444;
+      --warn: #f59e0b;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --font: 'DM Mono', 'Fira Code', 'SF Mono', monospace;
     }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6}
-    header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-    .logo{display:flex;align-items:center;gap:.6rem;font-weight:700;font-size:1.1rem;color:var(--accent)}
-    .logo-box{background:var(--accent);color:#fff;width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:800}
-    .header-right{display:flex;align-items:center;gap:.8rem}
-    .net-pill{padding:.25rem .75rem;border-radius:20px;font-size:.72rem;font-weight:600;border:1px solid;display:none}
-    .net-ganache{background:#fef3c7;border-color:#fde68a;color:#92400e}
-    .net-other{background:#fef2f2;border-color:#fecaca;color:#dc2626}
-    .wallet-pill{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:20px;padding:.2rem .75rem;font-size:.73rem;font-family:monospace;color:var(--success);display:none}
-    #connectBtn{padding:.42rem 1rem;border-radius:8px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-weight:600;font-size:.83rem;cursor:pointer}
-    #connectBtn:hover{background:var(--accent);color:#fff}
-    #connectBtn.connected{border-color:var(--success);color:var(--success)}
-    main{max-width:1000px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
-    .tab-row{display:flex;border-bottom:1px solid var(--border);margin-bottom:1.2rem;gap:.2rem}
-    .tab{padding:.5rem 1rem;border:none;background:none;font-size:.85rem;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit}
-    .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-    .tab-panel{display:none}.tab-panel.active{display:block}
-    .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.4rem;margin-bottom:1.1rem}
-    .card-title{font-weight:700;font-size:.93rem;margin-bottom:.9rem;display:flex;align-items:center;gap:.5rem}
-    .cicon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.82rem;flex-shrink:0}
-    .drop{border:2px dashed var(--border);border-radius:10px;padding:2rem;text-align:center;cursor:pointer;transition:all .2s;position:relative}
-    .drop:hover,.drop.over{border-color:var(--accent);background:#eff6ff}
-    .drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-    .file-chip{display:flex;align-items:center;gap:.9rem;padding:.8rem 1rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;margin-top:.8rem}
-    .file-name{font-weight:600;font-size:.87rem}
-    .file-meta{font-size:.73rem;color:var(--muted)}
-    .fremove{margin-left:auto;cursor:pointer;color:var(--muted);border:none;background:none;font-size:1.1rem}
-    .field{margin-bottom:.8rem}
-    .field label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:.3rem;font-weight:500}
-    .field input{width:100%;padding:.5rem .8rem;border:1px solid var(--border);border-radius:8px;font-size:.88rem;font-family:inherit;color:var(--text);background:var(--surface)}
-    .field input:focus{outline:none;border-color:var(--accent)}
-    .btn{display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1.2rem;border-radius:8px;border:none;font-size:.86rem;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
-    .btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#1d4ed8}
-    .btn-green{background:var(--success);color:#fff}.btn-green:hover{background:#15803d}
-    .btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
-    .btn:disabled{opacity:.4;cursor:not-allowed}
-    .btn-full{width:100%;justify-content:center}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
-    .mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.7rem;margin-bottom:.9rem}
-    .metric{background:var(--light);border-radius:9px;padding:.7rem .9rem}
-    .mlbl{font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:.25rem}
-    .mval{font-size:1.2rem;font-weight:700}
-    .msub{font-size:.7rem;color:var(--muted);margin-top:.1rem}
-    .hash-lbl{font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:.2rem}
-    .hash-box{background:#0f172a;border-radius:8px;padding:.6rem .9rem;font-family:monospace;font-size:.71rem;color:#22d3ee;word-break:break-all;position:relative;margin:.35rem 0}
-    .copy-btn{position:absolute;top:.45rem;right:.45rem;background:rgba(255,255,255,.1);border:none;border-radius:4px;color:#94a3b8;padding:.18rem .45rem;font-size:.66rem;cursor:pointer}
-    .copy-btn:hover{color:#fff}
-    .qrow{display:grid;grid-template-columns:30px 1fr 90px 70px 70px;gap:.6rem;align-items:start;padding:.6rem 0;border-bottom:1px solid var(--border);font-size:.8rem}
-    .qrow:last-child{border-bottom:none}
-    .qnum{font-weight:700;color:var(--muted)}
-    .bloom-pill{padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:600;text-align:center}
-    .bloom-remember{background:#f1f5f9;color:#475569}
-    .bloom-understand{background:#eff6ff;color:#1d4ed8}
-    .bloom-apply{background:#f0fdf4;color:#15803d}
-    .bloom-analyse{background:#fef3c7;color:#92400e}
-    .bloom-evaluate{background:#fdf4ff;color:#7e22ce}
-    .bloom-create{background:#fff1f2;color:#be123c}
-    .flag-w{color:var(--warn);font-size:.7rem}
-    .flag-ok{color:var(--success);font-size:.7rem}
-    .chain-panel{background:#0f172a;border-radius:12px;padding:1.2rem;margin-top:1rem}
-    .chain-row{display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.8rem}
-    .chain-row:last-child{border-bottom:none}
-    .ckey{color:#94a3b8}.cval{color:#e2e8f0;font-family:monospace;font-size:.73rem;word-break:break-all}
-    .cgreen{color:#4ade80}
-    .bbar-row{display:flex;align-items:center;gap:7px;margin-bottom:4px}
-    .bbar-lbl{width:70px;font-size:.7rem;text-align:right;color:var(--muted)}
-    .bbar-track{flex:1;height:12px;background:var(--light);border-radius:6px;overflow:hidden}
-    .bbar-fill{height:100%;border-radius:6px;transition:width .5s}
-    .bbar-n{width:18px;font-size:.7rem;color:var(--muted)}
-    .bias-tag{display:inline-block;margin:.2rem;padding:2px 7px;border-radius:5px;font-size:.7rem;background:#fef3c7;color:#92400e;border:1px solid #fde68a}
-    #toast{position:fixed;bottom:1.5rem;right:1.5rem;background:#1e293b;color:#f1f5f9;padding:.75rem 1.1rem;border-radius:10px;font-size:.82rem;transform:translateY(4rem);opacity:0;transition:all .3s;z-index:999;max-width:320px}
-    #toast.show{transform:translateY(0);opacity:1}
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), #a855f7);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .logo-text {
+      font-weight: 600;
+      font-size: 1.1rem;
+      background: linear-gradient(90deg, var(--accent), #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo-sub {
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .net-badge {
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      border: 1px solid;
+      display: none;
+    }
+
+    .net-badge.ganache {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: #f59e0b;
+      color: #f59e0b;
+    }
+
+    .net-badge.error {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
+    .net-badge.mainnet {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .wallet-badge {
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: 20px;
+      padding: 0.3rem 0.8rem;
+      font-size: 0.7rem;
+      font-family: var(--font);
+      color: var(--success);
+      display: none;
+    }
+
+    #connectBtn {
+      padding: 0.5rem 1.2rem;
+      border-radius: 10px;
+      border: 2px solid var(--accent);
+      background: transparent;
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: all 0.2s;
+    }
+
+    #connectBtn:hover {
+      background: var(--accent);
+      color: white;
+    }
+
+    #connectBtn.connected {
+      border-color: var(--success);
+      color: var(--success);
+    }
+
+    #connectBtn.connected:hover {
+      background: var(--success);
+      color: white;
+    }
+
+    /* ── Main ── */
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* ── Tabs ── */
+    .tab-row {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2rem;
+      gap: 0.5rem;
+    }
+
+    .tab {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      background: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      font-family: var(--font);
+      transition: all 0.2s;
+    }
+
+    .tab:hover { color: var(--text); }
+
+    .tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .tab-badge {
+      background: var(--error);
+      color: white;
+      font-size: 0.6rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 10px;
+      margin-left: 0.5rem;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .card-title {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    /* ── Form Elements ── */
+    .field {
+      margin-bottom: 1rem;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--surface-2);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .field input::placeholder {
+      color: var(--muted);
+    }
+
+    .field input.valid { border-color: var(--success); }
+    .field input.invalid { border-color: var(--error); }
+
+    .field-hint {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+    }
+
+    .field-hint.success { color: var(--success); }
+    .field-hint.error { color: var(--error); }
+
+    /* ── Dropzone ── */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 2.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    .dropzone input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .dropzone-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+      transition: transform 0.2s;
+    }
+
+    .dropzone:hover .dropzone-icon { transform: scale(1.1); }
+
+    .dropzone-text {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .dropzone-hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    /* ── File Chip ── */
+    .file-chip {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 12px;
+      margin-top: 1rem;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .file-icon { font-size: 1.5rem; }
+
+    .file-info { flex: 1; }
+
+    .file-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .file-meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .file-remove {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1.25rem;
+      padding: 0.25rem;
+      transition: color 0.2s;
+    }
+
+    .file-remove:hover { color: var(--error); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.7rem 1.5rem;
+      border-radius: 10px;
+      border: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #a855f7);
+      color: white;
+      width: 100%;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-green {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-green:hover:not(:disabled) {
+      background: #16a34a;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-sm {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.75rem;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .btn-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    /* ── Status ── */
+    .status {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.5rem;
+      text-align: center;
+    }
+
+    .status.error { color: var(--error); }
+    .status.success { color: var(--success); }
+
+    /* ── Metrics Grid ── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .metric {
+      background: var(--surface-2);
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .metric:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .metric-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .metric-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .metric-sub {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+    }
+
+    /* ── Hash Boxes ── */
+    .hash-section { margin-top: 1.25rem; }
+
+    .hash-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .hash-box {
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      font-size: 0.7rem;
+      color: #22d3ee;
+      word-break: break-all;
+      position: relative;
+      font-family: var(--font);
+    }
+
+    .hash-copy {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      border-radius: 4px;
+      color: var(--muted);
+      padding: 0.2rem 0.5rem;
+      font-size: 0.65rem;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: all 0.2s;
+    }
+
+    .hash-copy:hover { color: white; background: rgba(255,255,255,0.2); }
+
+    /* ── Bloom Bars ── */
+    .bloom-section { margin: 1.25rem 0; }
+
+    .bloom-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .bloom-label {
+      width: 80px;
+      font-size: 0.7rem;
+      text-align: right;
+      color: var(--muted);
+    }
+
+    .bloom-track {
+      flex: 1;
+      height: 14px;
+      background: var(--surface-2);
+      border-radius: 7px;
+      overflow: hidden;
+    }
+
+    .bloom-fill {
+      height: 100%;
+      border-radius: 7px;
+      transition: width 0.5s ease;
+    }
+
+    .bloom-count {
+      width: 24px;
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-align: left;
+    }
+
+    /* ── Bloom Pills ── */
+    .bloom-pill {
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+
+    .bloom-remember { background: #334155; color: #94a3b8; }
+    .bloom-understand { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .bloom-apply { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+    .bloom-analyse { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .bloom-evaluate { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+    .bloom-create { background: rgba(244, 63, 94, 0.2); color: #fb7185; }
+
+    /* ── Bias Tags ── */
+    .bias-tags { margin: 1rem 0; }
+
+    .bias-tag {
+      display: inline-block;
+      margin: 0.25rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .no-bias {
+      font-size: 0.8rem;
+      color: var(--success);
+    }
+
+    /* ── Question Table ── */
+    .q-table {
+      margin-top: 1rem;
+    }
+
+    .q-header {
+      display: grid;
+      grid-template-columns: 40px 1fr 100px 80px 70px;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    .q-row {
+      display: grid;
+      grid-template-columns: 40px 1fr 100px 80px 70px;
+      gap: 0.75rem;
+      align-items: center;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+      transition: background 0.2s;
+    }
+
+    .q-row:hover { background: rgba(255,255,255,0.02); }
+    .q-row:last-child { border-bottom: none; }
+
+    .q-num {
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .q-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .q-status {
+      font-size: 0.7rem;
+    }
+
+    .q-status.ok { color: var(--success); }
+    .q-status.warn { color: var(--warn); }
+
+    /* ── Chain Panel ── */
+    .chain-panel {
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-top: 1rem;
+    }
+
+    .chain-title {
+      color: #4ade80;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .chain-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.8rem;
+    }
+
+    .chain-row:last-child { border-bottom: none; }
+
+    .chain-key { color: var(--muted); }
+
+    .chain-val {
+      color: var(--text);
+      font-size: 0.75rem;
+      word-break: break-all;
+    }
+
+    /* ── Config ── */
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .config-status {
+      margin-top: 0.75rem;
+      font-size: 0.8rem;
+    }
+
+    /* ── Merkle Tree ── */
+    .merkle-container {
+      overflow-x: auto;
+      padding: 1rem 0;
+    }
+
+    .merkle-tree {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: fit-content;
+    }
+
+    .merkle-level {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .merkle-node {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.65rem;
+      font-family: var(--font);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .merkle-node:hover {
+      border-color: var(--accent);
+      transform: scale(1.05);
+    }
+
+    .merkle-node.root {
+      background: linear-gradient(135deg, var(--accent), #a855f7);
+      border-color: transparent;
+      font-weight: 600;
+    }
+
+    .merkle-node.leaf {
+      background: rgba(34, 197, 94, 0.15);
+      border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    .merkle-node.highlighted {
+      border-color: var(--warn);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+    }
+
+    .merkle-connector {
+      width: 2px;
+      height: 20px;
+      background: var(--border);
+      margin: 0 auto;
+    }
+
+    .merkle-stats {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--surface-2);
+      border-radius: 10px;
+    }
+
+    .merkle-stat {
+      text-align: center;
+    }
+
+    .merkle-stat-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .merkle-stat-label {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .merkle-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .merkle-info-item {
+      background: var(--surface-2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .merkle-info-label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .merkle-info-value {
+      font-size: 0.8rem;
+      word-break: break-all;
+    }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #1e293b;
+      color: #f1f5f9;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      transform: translateY(5rem);
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 999;
+      max-width: 350px;
+      border: 1px solid var(--border);
+    }
+
+    #toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    #toast.error { border-color: var(--error); }
+    #toast.success { border-color: var(--success); }
+    #toast.info { border-color: var(--accent); }
+
+    /* ── Empty State ── */
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--muted);
+    }
+
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    /* ── Action Bar ── */
+    .action-bar {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .action-status {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.5rem;
+    }
+
+    /* ── Connection Status ── */
+    .connection-status {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .connection-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--surface-2);
+      border-radius: 8px;
+      font-size: 0.75rem;
+    }
+
+    .connection-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    .connection-dot.connected { background: var(--success); }
+    .connection-dot.error { background: var(--error); }
+    .connection-dot.pending { background: var(--warn); animation: pulse 1.5s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      main { padding: 1rem; }
+      .tab { padding: 0.5rem 1rem; font-size: 0.8rem; }
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+      .q-header, .q-row { grid-template-columns: 30px 1fr 80px 60px; }
+      .q-header > :nth-child(4), .q-header > :nth-child(5),
+      .q-row > :nth-child(4), .q-row > :nth-child(5) { display: none; }
+    }
   </style>
 </head>
 <body>
 
 <header>
   <div class="logo">
-    <div class="logo-box">Q</div>
-    QuizLens <span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:.3rem">Ganache Edition</span>
+    <div class="logo-icon">Q</div>
+    <div>
+      <div class="logo-text">QuizLens</div>
+      <div class="logo-sub">NLP Question Analyzer</div>
+    </div>
   </div>
   <div class="header-right">
-    <span id="netPill" class="net-pill"></span>
-    <span id="walletPill" class="wallet-pill"></span>
+    <span id="netBadge" class="net-badge"></span>
+    <span id="walletBadge" class="wallet-badge"></span>
     <button id="connectBtn" onclick="connectWallet()">🦊 Connect MetaMask</button>
   </div>
 </header>
 
 <main>
-
-  <div class="tab-row">
-    <button class="tab active" onclick="sw('analyse',this)">Analyse & Notarize</button>
-    <button class="tab" onclick="sw('verify',this)">Verify</button>
-    <button class="tab" onclick="sw('config',this)">Config</button>
+  <div class="connection-status" id="connectionStatus">
+    <div class="connection-item">
+      <span class="connection-dot" id="apiDot"></span>
+      <span>NLP API</span>
+      <span id="apiStatus">Disconnected</span>
+    </div>
+    <div class="connection-item">
+      <span class="connection-dot" id="chainDot"></span>
+      <span>Blockchain</span>
+      <span id="chainStatus">Disconnected</span>
+    </div>
   </div>
 
-  <!-- ═══ ANALYSE ═══ -->
+  <!-- Tabs -->
+  <div class="tab-row">
+    <button class="tab active" onclick="switchTab('analyse', this)">Analyse</button>
+    <button class="tab" onclick="switchTab('verify', this)">Verify</button>
+    <button class="tab" onclick="switchTab('merkle', this)">Merkle Tree</button>
+    <button class="tab" onclick="switchTab('config', this)">Config</button>
+    <span class="tab-badge" id="configBadge" style="display: none;">!</span>
+  </div>
+
+  <!-- ── ANALYSE TAB ── -->
   <div id="tab-analyse" class="tab-panel active">
     <div class="card">
-      <div class="card-title"><div class="cicon" style="background:#eff6ff">📄</div> Upload question paper</div>
-      <div class="field"><label>Exam title</label><input id="examTitle" placeholder="e.g. Computer Science Final Exam 2025"/></div>
-      <div class="drop" id="dropzone" ondragover="dz(event,'over')" ondragleave="dz(event,'leave')" ondrop="dz(event,'drop')">
-        <input type="file" id="fileIn" accept=".pdf,.docx,.txt" onchange="onFile(event)"/>
-        <div style="font-size:1.8rem;margin-bottom:.5rem">📂</div>
-        <div style="font-weight:600;margin-bottom:.2rem">Drag & drop your question paper</div>
-        <div style="color:var(--muted);font-size:.8rem">PDF · DOCX · TXT</div>
+      <div class="card-header">
+        <div class="card-icon" style="background: rgba(99, 102, 241, 0.15)">📄</div>
+        <div class="card-title">Upload Question Paper</div>
       </div>
-      <div id="fileChip" style="display:none" class="file-chip">
-        <span id="fIcon" style="font-size:1.4rem">📄</span>
-        <div><div class="file-name" id="fileName"></div><div class="file-meta" id="fileMeta"></div></div>
-        <button class="fremove" onclick="clearFile()">✕</button>
+
+      <div class="field">
+        <label>Exam Title</label>
+        <input id="examTitle" type="text" placeholder="e.g., Computer Science Midterm 2025"/>
       </div>
-      <div style="margin-top:.9rem">
-        <button class="btn btn-primary btn-full" id="analyseBtn" onclick="runAnalysis()" disabled>🔬 Run NLP Analysis</button>
-        <div style="font-size:.73rem;color:var(--muted);margin-top:.35rem;text-align:center" id="nlpStatus"></div>
+
+      <div class="dropzone" id="dropzone" 
+           ondragover="handleDrag(event, 'over')" 
+           ondragleave="handleDrag(event, 'leave')" 
+           ondrop="handleDrag(event, 'drop')">
+        <input type="file" id="fileInput" accept=".pdf,.docx,.txt" onchange="handleFileSelect(event)"/>
+        <div class="dropzone-icon">📂</div>
+        <div class="dropzone-text">Drag & drop your question paper</div>
+        <div class="dropzone-hint">PDF, DOCX, or TXT</div>
+      </div>
+
+      <div id="fileChip" class="file-chip" style="display: none;">
+        <span id="fileIcon" class="file-icon">📄</span>
+        <div class="file-info">
+          <div id="fileName" class="file-name"></div>
+          <div id="fileMeta" class="file-meta"></div>
+        </div>
+        <button class="file-remove" onclick="clearFile()">✕</button>
+      </div>
+
+      <div style="margin-top: 1.25rem;">
+        <button class="btn btn-primary" id="analyzeBtn" onclick="runAnalysis()" disabled>
+          <span id="analyzeBtnText">🔬 Run NLP Analysis</span>
+        </button>
+        <div id="nlpStatus" class="status"></div>
       </div>
     </div>
 
-    <div id="resultsCard" style="display:none" class="card">
-      <div class="card-title"><div class="cicon" style="background:#f5f3ff">🧠</div> NLP Results</div>
-      <div class="mgrid" id="metricsGrid"></div>
-      <div class="hash-lbl">Paper SHA-256</div>
-      <div class="hash-box"><span id="paperHash"></span><button class="copy-btn" onclick="cp('paperHash')">Copy</button></div>
-      <div class="hash-lbl" style="margin-top:.5rem">Report SHA-256</div>
-      <div class="hash-box"><span id="reportHash"></span><button class="copy-btn" onclick="cp('reportHash')">Copy</button></div>
-      <div style="margin:.8rem 0"><div class="hash-lbl" style="margin-bottom:.4rem">Bloom's distribution</div><div id="bloomBars"></div></div>
-      <div id="biasSummary" style="margin-bottom:.8rem"></div>
-      <div class="hash-lbl" style="margin-bottom:.4rem">Per-question breakdown</div>
-      <div id="qTable"></div>
-      <div style="display:flex;gap:.6rem;margin-top:1rem;flex-wrap:wrap">
-        <button class="btn btn-outline" onclick="dlReport()">⬇ Download PDF</button>
-        <button class="btn btn-green" id="notarizeBtn" onclick="notarize()">⛓ Notarize on Ganache</button>
-        <span id="notarizeStatus"></span>
+    <div id="resultsCard" class="card" style="display: none;">
+      <div class="card-header">
+        <div class="card-icon" style="background: rgba(168, 85, 247, 0.15)">🧠</div>
+        <div class="card-title">Analysis Results</div>
       </div>
+
+      <div class="metrics-grid" id="metricsGrid"></div>
+
+      <div class="hash-section">
+        <div class="hash-label">Paper SHA-256</div>
+        <div class="hash-box">
+          <span id="paperHash"></span>
+          <button class="hash-copy" onclick="copyHash('paperHash')">Copy</button>
+        </div>
+      </div>
+
+      <div class="hash-section">
+        <div class="hash-label">Report SHA-256</div>
+        <div class="hash-box">
+          <span id="reportHash"></span>
+          <button class="hash-copy" onclick="copyHash('reportHash')">Copy</button>
+        </div>
+      </div>
+
+      <div class="bloom-section">
+        <div class="hash-label">Bloom's Taxonomy Distribution</div>
+        <div id="bloomBars"></div>
+      </div>
+
+      <div id="biasSection" class="bias-tags"></div>
+
+      <div class="q-table">
+        <div class="q-header">
+          <div>#</div>
+          <div>Question</div>
+          <div>Bloom</div>
+          <div>Bias</div>
+          <div>Status</div>
+        </div>
+        <div id="qTable"></div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn btn-outline" onclick="downloadReport()">⬇ Download PDF</button>
+        <button class="btn btn-green" id="notarizeBtn" onclick="notarize()">⛓ Notarize on Blockchain</button>
+      </div>
+      <div id="notarizeStatus" class="action-status"></div>
     </div>
 
-    <div id="chainCard" style="display:none" class="chain-panel">
-      <div style="color:#e2e8f0;font-weight:700;font-size:.9rem;margin-bottom:.8rem">⛓ On-chain record — Ganache</div>
+    <div id="chainCard" class="chain-panel" style="display: none;">
+      <div class="chain-title">⛓ On-chain Record — Ganache</div>
       <div id="chainRecord"></div>
     </div>
   </div>
 
-  <!-- ═══ VERIFY ═══ -->
+  <!-- ── VERIFY TAB ── -->
   <div id="tab-verify" class="tab-panel">
     <div class="card">
-      <div class="card-title"><div class="cicon" style="background:#f0fdf4">🔍</div> Verify a paper on Ganache</div>
-      <div class="drop" id="vDropzone" ondragover="dz2(event,'over')" ondragleave="dz2(event,'leave')" ondrop="dz2(event,'drop')">
-        <input type="file" id="vFileIn" accept=".pdf,.docx,.txt" onchange="onVFile(event)"/>
-        <div style="font-size:1.8rem;margin-bottom:.5rem">🔎</div>
-        <div style="font-weight:600">Drop paper to verify</div>
+      <div class="card-header">
+        <div class="card-icon" style="background: rgba(34, 197, 94, 0.15)">🔍</div>
+        <div class="card-title">Verify a Paper</div>
       </div>
-      <div id="vChip" style="display:none" class="file-chip">
-        <span style="font-size:1.4rem">🔍</span>
-        <div><div class="file-name" id="vName"></div><div class="file-meta" id="vMeta"></div></div>
-        <button class="fremove" onclick="clearVFile()">✕</button>
+
+      <div class="dropzone" id="verifyDropzone"
+           ondragover="handleVerifyDrag(event, 'over')"
+           ondragleave="handleVerifyDrag(event, 'leave')"
+           ondrop="handleVerifyDrag(event, 'drop')">
+        <input type="file" id="verifyFileInput" accept=".pdf,.docx,.txt" onchange="handleVerifyFile(event)"/>
+        <div class="dropzone-icon">🔎</div>
+        <div class="dropzone-text">Drop paper to verify</div>
+        <div class="dropzone-hint">PDF, DOCX, or TXT</div>
       </div>
-      <div id="vHashBox" style="display:none;margin-top:.8rem">
-        <div class="hash-lbl">File SHA-256</div>
-        <div class="hash-box"><span id="vHash"></span></div>
-        <button class="btn btn-primary btn-full" style="margin-top:.7rem" onclick="verifyChain()">🔍 Verify on Ganache</button>
+
+      <div id="verifyChip" class="file-chip" style="display: none;">
+        <span class="file-icon">🔍</span>
+        <div class="file-info">
+          <div id="verifyFileName" class="file-name"></div>
+          <div id="verifyFileMeta" class="file-meta"></div>
+        </div>
+        <button class="file-remove" onclick="clearVerifyFile()">✕</button>
+      </div>
+
+      <div id="verifyHashBox" style="display: none; margin-top: 1rem;">
+        <div class="hash-label">File SHA-256</div>
+        <div class="hash-box"><span id="verifyHash"></span></div>
+        <button class="btn btn-primary" style="margin-top: 1rem;" onclick="verifyChain()">🔍 Verify on Blockchain</button>
       </div>
     </div>
-    <div id="verifyResult" style="display:none" class="card"></div>
+
+    <div id="verifyResult" class="card" style="display: none;"></div>
   </div>
 
-  <!-- ═══ CONFIG ═══ -->
+  <!-- ── MERKLE TREE TAB ── -->
+  <div id="tab-merkle" class="tab-panel">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background: rgba(168, 85, 247, 0.15)">🌳</div>
+        <div class="card-title">Merkle Tree Visualization</div>
+      </div>
+
+      <div class="connection-status" id="merkleConnectionStatus" style="margin-bottom: 1rem;">
+        <div class="connection-item">
+          <span class="connection-dot" id="merkleContractDot"></span>
+          <span>Contract</span>
+        </div>
+        <div class="connection-item">
+          <span class="connection-dot" id="merkleChainDot"></span>
+          <span>Network</span>
+        </div>
+      </div>
+
+      <div id="merkleEmpty" class="empty-state">
+        <div class="empty-icon">🌳</div>
+        <div>Connect to a blockchain to view the Merkle Tree</div>
+        <div style="font-size: 0.75rem; margin-top: 0.5rem;">Configure your contract address in the Config tab</div>
+      </div>
+
+      <div id="merkleContent" style="display: none;">
+        <div class="merkle-stats">
+          <div class="merkle-stat">
+            <div class="merkle-stat-value" id="merkleLeafCount">0</div>
+            <div class="merkle-stat-label">Total Leaves</div>
+          </div>
+          <div class="merkle-stat">
+            <div class="merkle-stat-value" id="merkleTreeDepth">0</div>
+            <div class="merkle-stat-label">Tree Depth</div>
+          </div>
+          <div class="merkle-stat">
+            <div class="merkle-stat-value" id="merkleLastUpdate">-</div>
+            <div class="merkle-stat-label">Last Update</div>
+          </div>
+        </div>
+
+        <div class="merkle-info">
+          <div class="merkle-info-item">
+            <div class="merkle-info-label">Current Merkle Root</div>
+            <div class="merkle-info-value" id="merkleRootDisplay" style="color: var(--accent);">
+              Loading...
+            </div>
+            <button class="hash-copy" onclick="copyMerkleRoot()" style="margin-top: 0.5rem;">Copy</button>
+          </div>
+          <div class="merkle-info-item">
+            <div class="merkle-info-label">Contract Address</div>
+            <div class="merkle-info-value" id="merkleContractDisplay" style="color: var(--muted);">
+              Not set
+            </div>
+          </div>
+        </div>
+
+        <div class="merkle-container">
+          <div class="merkle-tree" id="merkleTree"></div>
+        </div>
+
+        <div class="btn-group" style="margin-top: 1.5rem;">
+          <button class="btn btn-outline" id="refreshMerkleBtn" onclick="refreshMerkleTree()">
+            🔄 Refresh Tree
+          </button>
+          <button class="btn btn-outline" onclick="expandAllNodes()">
+            ↕ Expand All
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="merkleProofCard" style="display: none;">
+      <div class="card-header">
+        <div class="card-icon" style="background: rgba(34, 197, 94, 0.15)">🔐</div>
+        <div class="card-title">Verify a Leaf</div>
+      </div>
+
+      <div class="field">
+        <label>Leaf Hash (Paper Hash)</label>
+        <input id="proofLeafHash" type="text" placeholder="0x..."/>
+      </div>
+
+      <button class="btn btn-primary" style="width: auto;" onclick="verifyMerkleProof()">
+        🔍 Verify Proof
+      </button>
+
+      <div id="proofResult" style="margin-top: 1rem;"></div>
+    </div>
+  </div>
+
+  <!-- ── CONFIG TAB ── -->
   <div id="tab-config" class="tab-panel">
     <div class="card">
-      <div class="card-title"><div class="cicon" style="background:#f1f5f9">⚙️</div> Configuration</div>
-      <div class="field"><label>NLP API URL</label><input id="cfgApi" value="http://localhost:8000" oninput="CFG.api=this.value"/></div>
-      <div class="field"><label>Contract address</label><input id="cfgContract" placeholder="0x..." oninput="CFG.contract=this.value.trim()"/></div>
-      <div class="field"><label>Ganache RPC URL</label><input id="cfgRpc" value="http://127.0.0.1:8545" oninput="CFG.rpc=this.value"/></div>
-      <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.8rem">
-        <button class="btn btn-outline" onclick="testApi()">Test NLP API</button>
-        <button class="btn btn-outline" onclick="testChain()">Test Ganache connection</button>
+      <div class="card-header">
+        <div class="card-icon" style="background: rgba(99, 102, 241, 0.15)">⚙️</div>
+        <div class="card-title">Configuration</div>
       </div>
-      <div id="cfgStatus" style="margin-top:.6rem;font-size:.8rem"></div>
+
+      <div class="config-grid">
+        <div class="field">
+          <label>NLP API URL</label>
+          <input id="cfgApi" type="text" value="http://localhost:8000" oninput="validateApiUrl(this)"/>
+          <div class="field-hint" id="cfgApiHint">URL for NLP analysis service</div>
+        </div>
+        <div class="field">
+          <label>Contract Address</label>
+          <input id="cfgContract" type="text" placeholder="0x..." oninput="validateContractAddress(this)"/>
+          <div class="field-hint" id="cfgContractHint">QuizLens smart contract on blockchain</div>
+        </div>
+        <div class="field">
+          <label>Ganache RPC URL</label>
+          <input id="cfgRpc" type="text" value="http://127.0.0.1:8545" oninput="validateRpcUrl(this)"/>
+          <div class="field-hint" id="cfgRpcHint">Local blockchain node endpoint</div>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-outline" onclick="testApi()">🧪 Test API</button>
+        <button class="btn btn-outline" onclick="testChain()">🔗 Test Connection</button>
+        <button class="btn btn-green" onclick="saveConfig()">💾 Save Config</button>
+      </div>
+
+      <div id="configStatus" class="config-status"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background: rgba(34, 197, 94, 0.15)">📋</div>
+        <div class="card-title">Saved Configuration</div>
+      </div>
+
+      <div id="savedConfig">
+        <div class="chain-row">
+          <span class="chain-key">NLP API</span>
+          <span class="chain-val" id="savedApi">-</span>
+        </div>
+        <div class="chain-row">
+          <span class="chain-key">Contract Address</span>
+          <span class="chain-val" id="savedContract">-</span>
+        </div>
+        <div class="chain-row">
+          <span class="chain-key">RPC URL</span>
+          <span class="chain-val" id="savedRpc">-</span>
+        </div>
+        <div class="chain-row">
+          <span class="chain-key">Last Saved</span>
+          <span class="chain-val" id="savedTime">Never</span>
+        </div>
+      </div>
+
+      <div class="btn-group" style="margin-top: 1rem;">
+        <button class="btn btn-outline btn-sm" onclick="loadConfig()">📥 Load Saved</button>
+        <button class="btn btn-outline btn-sm" onclick="clearSavedConfig()">🗑️ Clear Saved</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background: rgba(245, 158, 11, 0.15)">💡</div>
+        <div class="card-title">Quick Setup Guide</div>
+      </div>
+      <div style="font-size: 0.8rem; color: var(--muted); line-height: 1.8;">
+        <p style="margin-bottom: 0.75rem;"><strong style="color: var(--text);">1. Start Ganache:</strong> Run <code style="background: var(--surface-2); padding: 0.2rem 0.4rem; border-radius: 4px;">npx hardhat node</code> or open Ganache GUI</p>
+        <p style="margin-bottom: 0.75rem;"><strong style="color: var(--text);">2. Deploy Contract:</strong> Run <code style="background: var(--surface-2); padding: 0.2rem 0.4rem; border-radius: 4px;">npx hardhat run scripts/deploy.js --network localhost</code></p>
+        <p style="margin-bottom: 0.75rem;"><strong style="color: var(--text);">3. Copy Address:</strong> The deployment script outputs the contract address</p>
+        <p style="margin-bottom: 0.75rem;"><strong style="color: var(--text);">4. Paste Here:</strong> Enter the contract address above and click "Save Config"</p>
+        <p><strong style="color: var(--text);">5. Start NLP:</strong> Run <code style="background: var(--surface-2); padding: 0.2rem 0.4rem; border-radius: 4px;">cd nlp && source venv/bin/activate && uvicorn app:app --reload</code></p>
+      </div>
     </div>
   </div>
-
 </main>
+
 <div id="toast"></div>
 
 <script>
-const CFG = { api:"http://localhost:8000", contract:"", rpc:"http://127.0.0.1:8545" };
-try { if(typeof CONTRACT_ADDRESS!=="undefined") CFG.contract=CONTRACT_ADDRESS; } catch(e){}
+  // ── Config ──
+  const CFG = {
+    api: "http://localhost:8000",
+    contract: "",
+    rpc: "http://127.0.0.1:8545"
+  };
 
-const ABI = [
-  "function notarize(bytes32 paperHash, bytes32 reportHash, string calldata title) external",
-  "function verify(bytes32 paperHash) external view returns (bool valid, address setter, bytes32 reportHash, uint256 timestamp, string memory title)"
-];
-
-let provider, signer, walletAddr;
-let currentFile=null, analysisData=null, vFile=null;
-
-async function connectWallet() {
-  if (!window.ethereum) return toast("MetaMask not found","error");
+  // Load contract address if available
   try {
-    provider = new ethers.providers.Web3Provider(window.ethereum);
-    await provider.send("eth_requestAccounts",[]);
-    signer = provider.getSigner();
-    walletAddr = await signer.getAddress();
-    const network = await provider.getNetwork();
-    updateNetworkPill(network.chainId);
-    document.getElementById("connectBtn").textContent = "✅ "+short(walletAddr);
-    document.getElementById("connectBtn").classList.add("connected");
-    document.getElementById("walletPill").textContent = short(walletAddr);
-    document.getElementById("walletPill").style.display = "inline";
-    toast("Wallet connected — "+short(walletAddr),"success");
-  } catch(e){ toast("Connection failed: "+e.message,"error"); }
-}
+    if (typeof CONTRACT_ADDRESS !== "undefined") {
+      CFG.contract = CONTRACT_ADDRESS;
+    }
+  } catch (e) {}
 
-function updateNetworkPill(chainId) {
-  const pill = document.getElementById("netPill");
-  pill.style.display = "inline";
-  if (chainId===5777 || chainId===1337) {
-    pill.textContent = "Ganache";
-    pill.className = "net-pill net-ganache";
-  } else {
-    pill.textContent = "Wrong network! Switch to Ganache";
-    pill.className = "net-pill net-other";
+  // Load saved config
+  loadSavedConfig();
+
+  // ── ABI ──
+  const ABI = [
+    "function notarize(bytes32 paperHash, bytes32 reportHash, string calldata title) external",
+    "function verify(bytes32 paperHash) external view returns (bool valid, address setter, bytes32 reportHash, uint256 timestamp, string memory title)",
+    "function merkleRoot() external view returns (bytes32)",
+    "function getLeafCount() external view returns (uint256)",
+    "function notarizedHashes(uint256) external view returns (bytes32)"
+  ];
+
+  // ── State ──
+  let provider = null;
+  let signer = null;
+  let walletAddr = null;
+  let currentFile = null;
+  let analysisData = null;
+  let verifyFile = null;
+
+  // ── MetaMask Connection ──
+  async function connectWallet() {
+    const btn = document.getElementById("connectBtn");
+    
+    if (typeof window.ethereum === "undefined") {
+      showToast("MetaMask not found. Please install MetaMask extension.", "error");
+      return;
+    }
+
+    try {
+      btn.innerHTML = '<span class="spinner"></span> Connecting...';
+      btn.disabled = true;
+
+      // Request account access
+      const accounts = await window.ethereum.request({ 
+        method: "eth_requestAccounts" 
+      });
+
+      if (accounts.length === 0) {
+        throw new Error("No accounts found");
+      }
+
+      // Create provider and signer
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      signer = provider.getSigner();
+      walletAddr = await signer.getAddress();
+
+      // Check network
+      const network = await provider.getNetwork();
+      updateNetworkBadge(network.chainId);
+
+      // Update UI
+      btn.textContent = "✅ " + shortAddr(walletAddr);
+      btn.classList.add("connected");
+      
+      const walletBadge = document.getElementById("walletBadge");
+      walletBadge.textContent = shortAddr(walletAddr);
+      walletBadge.style.display = "inline";
+
+      showToast("Wallet connected: " + shortAddr(walletAddr), "success");
+
+    } catch (error) {
+      console.error("Wallet connection error:", error);
+      let msg = "Connection failed";
+      if (error.code === 4001) {
+        msg = "User rejected the connection request";
+      } else if (error.message) {
+        msg = error.message;
+      }
+      showToast(msg, "error");
+      btn.textContent = "🦊 Connect MetaMask";
+    } finally {
+      btn.disabled = false;
+    }
   }
-}
 
-function dz(e,t)  { e.preventDefault(); document.getElementById("dropzone").classList.toggle("over",t==="over"); if(t==="drop") loadFile(e.dataTransfer.files[0],false); }
-function dz2(e,t) { e.preventDefault(); document.getElementById("vDropzone").classList.toggle("over",t==="over"); if(t==="drop") loadFile(e.dataTransfer.files[0],true); }
-function onFile(e)  { loadFile(e.target.files[0],false); }
-function onVFile(e) { loadFile(e.target.files[0],true); }
-
-async function loadFile(file, isVerify) {
-  if (!file) return;
-  if (!isVerify) {
-    currentFile=file;
-    document.getElementById("fileName").textContent=file.name;
-    document.getElementById("fileMeta").textContent=fmtSz(file.size)+" · "+file.name.split(".").pop().toUpperCase();
-    document.getElementById("fIcon").textContent=fIcon(file.name);
-    document.getElementById("fileChip").style.display="flex";
-    document.getElementById("analyseBtn").disabled=false;
-  } else {
-    vFile=file;
-    document.getElementById("vName").textContent=file.name;
-    document.getElementById("vMeta").textContent=fmtSz(file.size);
-    document.getElementById("vChip").style.display="flex";
-    const hash=await sha256File(file);
-    document.getElementById("vHash").textContent=hash;
-    document.getElementById("vHashBox").style.display="block";
+  function updateNetworkBadge(chainId) {
+    const badge = document.getElementById("netBadge");
+    badge.style.display = "inline";
+    
+    // Ganache = 1337 or 5777, Hardhat = 31337
+    if (chainId === 1337 || chainId === 5777 || chainId === 31337) {
+      badge.textContent = "🟡 Ganache";
+      badge.className = "net-badge ganache";
+    } else {
+      badge.textContent = "❌ Wrong Network";
+      badge.className = "net-badge error";
+    }
   }
-}
 
-function clearFile() {
-  currentFile=null; analysisData=null;
-  document.getElementById("fileChip").style.display="none";
-  document.getElementById("analyseBtn").disabled=true;
-  document.getElementById("resultsCard").style.display="none";
-  document.getElementById("chainCard").style.display="none";
-  document.getElementById("fileIn").value="";
-}
-function clearVFile() {
-  vFile=null;
-  document.getElementById("vChip").style.display="none";
-  document.getElementById("vHashBox").style.display="none";
-  document.getElementById("verifyResult").style.display="none";
-  document.getElementById("vFileIn").value="";
-}
+  // ── Tab Switching ──
+  function switchTab(name, btn) {
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+    document.getElementById("tab-" + name).classList.add("active");
+    btn.classList.add("active");
+  }
 
-async function runAnalysis() {
-  if (!currentFile) return;
-  const btn=document.getElementById("analyseBtn");
-  const st=document.getElementById("nlpStatus");
-  btn.innerHTML='<span class="spinner"></span> Analysing…'; btn.disabled=true;
-  st.textContent="Sending to NLP API…";
-  const started=Date.now();
-  try {
-    const title=document.getElementById("examTitle").value||currentFile.name;
-    const form=new FormData();
-    form.append("file",currentFile);
-    form.append("title",title);
-    const resp=await fetch(CFG.api+"/analyze",{method:"POST",body:form});
-    if(!resp.ok){const e=await resp.json().catch(()=>({detail:"Error"})); throw new Error(e.detail);}
-    analysisData=await resp.json();
+  // ── File Handling ──
+  function handleDrag(e, type) {
+    e.preventDefault();
+    const dropzone = document.getElementById("dropzone");
+    if (type === "over") {
+      dropzone.classList.add("dragover");
+    } else if (type === "leave") {
+      dropzone.classList.remove("dragover");
+    } else if (type === "drop") {
+      dropzone.classList.remove("dragover");
+      loadFile(e.dataTransfer.files[0], false);
+    }
+  }
+
+  function handleVerifyDrag(e, type) {
+    e.preventDefault();
+    const dropzone = document.getElementById("verifyDropzone");
+    if (type === "over") {
+      dropzone.classList.add("dragover");
+    } else if (type === "leave") {
+      dropzone.classList.remove("dragover");
+    } else if (type === "drop") {
+      dropzone.classList.remove("dragover");
+      loadFile(e.dataTransfer.files[0], true);
+    }
+  }
+
+  function handleFileSelect(e) {
+    loadFile(e.target.files[0], false);
+  }
+
+  function handleVerifyFile(e) {
+    loadFile(e.target.files[0], true);
+  }
+
+  async function loadFile(file, isVerify) {
+    if (!file) return;
+
+    if (!isVerify) {
+      currentFile = file;
+      document.getElementById("fileName").textContent = file.name;
+      document.getElementById("fileMeta").textContent = formatSize(file.size) + " · " + file.name.split(".").pop().toUpperCase();
+      document.getElementById("fileIcon").textContent = getFileIcon(file.name);
+      document.getElementById("fileChip").style.display = "flex";
+      document.getElementById("analyzeBtn").disabled = false;
+    } else {
+      verifyFile = file;
+      document.getElementById("verifyFileName").textContent = file.name;
+      document.getElementById("verifyFileMeta").textContent = formatSize(file.size);
+      document.getElementById("verifyChip").style.display = "flex";
+      
+      // Calculate hash
+      const hash = await sha256File(file);
+      document.getElementById("verifyHash").textContent = hash;
+      document.getElementById("verifyHashBox").style.display = "block";
+    }
+  }
+
+  function clearFile() {
+    currentFile = null;
+    analysisData = null;
+    document.getElementById("fileChip").style.display = "none";
+    document.getElementById("analyzeBtn").disabled = true;
+    document.getElementById("resultsCard").style.display = "none";
+    document.getElementById("chainCard").style.display = "none";
+    document.getElementById("fileInput").value = "";
+  }
+
+  function clearVerifyFile() {
+    verifyFile = null;
+    document.getElementById("verifyChip").style.display = "none";
+    document.getElementById("verifyHashBox").style.display = "none";
+    document.getElementById("verifyResult").style.display = "none";
+    document.getElementById("verifyFileInput").value = "";
+  }
+
+  // ── Analysis ──
+  async function runAnalysis() {
+    if (!currentFile) return;
+
+    const btn = document.getElementById("analyzeBtn");
+    const btnText = document.getElementById("analyzeBtnText");
+    const status = document.getElementById("nlpStatus");
+
+    btn.disabled = true;
+    btnText.innerHTML = '<span class="spinner"></span> Analysing...';
+    status.textContent = "Sending to NLP API...";
+    status.className = "status";
+
+    const startTime = Date.now();
+
+    try {
+      const title = document.getElementById("examTitle").value || currentFile.name;
+      const formData = new FormData();
+      formData.append("file", currentFile);
+      formData.append("title", title);
+
+      const response = await fetch(CFG.api + "/analyze", {
+        method: "POST",
+        body: formData
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: "Unknown error" }));
+        throw new Error(error.detail || `HTTP ${response.status}`);
+      }
+
+      analysisData = await response.json();
+      renderResults(analysisData);
+      
+      document.getElementById("resultsCard").style.display = "block";
+      
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      status.textContent = "✅ Analysis complete in " + elapsed + "s";
+      status.className = "status success";
+      
+      showToast("Analysis complete!", "success");
+
+    } catch (error) {
+      console.error("Analysis error:", error);
+      status.textContent = "❌ " + error.message;
+      status.className = "status error";
+      showToast("API Error: " + error.message, "error");
+      
+      // Show demo data
+      showDemoData();
+
+    } finally {
+      btnText.innerHTML = "🔬 Run NLP Analysis";
+      btn.disabled = false;
+    }
+  }
+
+  function showDemoData() {
+    analysisData = {
+      title: document.getElementById("examTitle").value || "Demo Paper",
+      question_count: 5,
+      flesch_score: 52.3,
+      flesch_grade: 9.1,
+      readability_label: "Standard",
+      avg_sentence_length: 18.4,
+      overall_bloom: "apply",
+      bias_summary: [],
+      ambiguous_questions: [3],
+      questions: [
+        { index: 1, text: "Define recursion in programming.", bloom_level: "remember", bloom_confidence: "high", bias_flags: [] },
+        { index: 2, text: "Explain the difference between an array and a linked list.", bloom_level: "understand", bloom_confidence: "high", bias_flags: [] },
+        { index: 3, text: "Implement a binary search algorithm.", bloom_level: "apply", bloom_confidence: "high", bias_flags: [] },
+        { index: 4, text: "Analyse the time complexity of quicksort.", bloom_level: "analyse", bloom_confidence: "high", bias_flags: [] },
+        { index: 5, text: "Design a caching system for a web application.", bloom_level: "create", bloom_confidence: "medium", bias_flags: [] }
+      ],
+      paper_hash: "0x" + "a".repeat(64),
+      report_hash: "0x" + "b".repeat(64),
+      report_pdf_b64: null
+    };
+    
     renderResults(analysisData);
-    document.getElementById("resultsCard").style.display="block";
-    st.textContent="✅ Analysis complete";
-    toast("NLP analysis done!","success");
-  } catch(e) {
-    st.textContent="❌ "+e.message;
-    toast("API error: "+e.message,"error");
-    demoResults();
-  } finally {
-    btn.innerHTML="🔬 Run NLP Analysis"; btn.disabled=false;
+    document.getElementById("resultsCard").style.display = "block";
+    showToast("Showing demo data (NLP API not running)", "error");
   }
-}
 
-function demoResults() {
-  analysisData={title:document.getElementById("examTitle").value||"Demo",question_count:5,flesch_score:52.3,flesch_grade:9.1,readability_label:"Standard",avg_sentence_length:18.4,overall_bloom:"apply",bias_summary:[],ambiguous_questions:[3],questions:[{index:1,text:"Define recursion.",bloom_level:"remember",bloom_confidence:"high",bias_flags:[]},{index:2,text:"Explain binary search.",bloom_level:"understand",bloom_confidence:"high",bias_flags:[]},{index:3,text:"Implement merge sort.",bloom_level:"apply",bloom_confidence:"high",bias_flags:[]},{index:4,text:"Analyse quicksort complexity.",bloom_level:"analyse",bloom_confidence:"high",bias_flags:[]},{index:5,text:"Design a caching system.",bloom_level:"create",bloom_confidence:"medium",bias_flags:[]}],paper_hash:"0x"+"a".repeat(64),report_hash:"0x"+"b".repeat(64),report_pdf_b64:null};
-  renderResults(analysisData);
-  document.getElementById("resultsCard").style.display="block";
-}
-
-function renderResults(d) {
-  document.getElementById("metricsGrid").innerHTML=
-    metric("Questions",d.question_count,"")+
-    metric("Flesch ease",d.flesch_score,d.readability_label)+
-    metric("Grade level","G "+d.flesch_grade,"")+
-    metric("Avg sent",d.avg_sentence_length+"w","")+
-    metric("Top Bloom",d.overall_bloom,"")+
-    metric("Bias flags",d.bias_summary.length,d.bias_summary.length?"⚠ review":"✓ none");
-  document.getElementById("paperHash").textContent=d.paper_hash;
-  document.getElementById("reportHash").textContent=d.report_hash;
-  const levels=["remember","understand","apply","analyse","evaluate","create"];
-  const cnts={}; levels.forEach(l=>cnts[l]=0);
-  d.questions.forEach(q=>{if(cnts[q.bloom_level]!==undefined)cnts[q.bloom_level]++;});
-  const mx=Math.max(...Object.values(cnts),1);
-  const cols={remember:"#94a3b8",understand:"#3b82f6",apply:"#22c55e",analyse:"#f59e0b",evaluate:"#a855f7",create:"#f43f5e"};
-  document.getElementById("bloomBars").innerHTML=levels.map(l=>
-    `<div class="bbar-row"><div class="bbar-lbl">${l}</div><div class="bbar-track"><div class="bbar-fill" style="width:${Math.round(cnts[l]/mx*100)}%;background:${cols[l]}"></div></div><div class="bbar-n">${cnts[l]}</div></div>`
-  ).join("");
-  document.getElementById("biasSummary").innerHTML=d.bias_summary.length
-    ?`<div>${d.bias_summary.map(b=>`<span class="bias-tag">${b}</span>`).join("")}</div>`
-    :`<span style="font-size:.78rem;color:var(--success)">✓ No bias flags</span>`;
-  document.getElementById("qTable").innerHTML=d.questions.map(q=>`
-    <div class="qrow">
-      <div class="qnum">Q${q.index}</div>
-      <div>${q.text.slice(0,100)}${q.text.length>100?"…":""}</div>
-      <div><span class="bloom-pill bloom-${q.bloom_level}">${q.bloom_level}</span></div>
-      <div>${q.bias_flags.length?`<span class="flag-w">⚠ bias</span>`:`<span class="flag-ok">✓</span>`}</div>
-      <div>${d.ambiguous_questions.includes(q.index)?`<span class="flag-w">⚠ vague</span>`:""}</div>
-    </div>`).join("");
-}
-
-function metric(l,v,s){return `<div class="metric"><div class="mlbl">${l}</div><div class="mval">${v}</div>${s?`<div class="msub">${s}</div>`:""}</div>`;}
-
-async function notarize() {
-  if (!analysisData) return;
-  if (!CFG.contract) return toast("Paste contract address in Config tab first","warn");
-  const btn=document.getElementById("notarizeBtn");
-  btn.innerHTML='<span class="spinner"></span> Waiting for MetaMask…'; btn.disabled=true;
-  try {
-    let txHash, blockNum, gasUsed;
-    if (signer) {
-      const contract=new ethers.Contract(CFG.contract, ABI, signer);
-      const ph=analysisData.paper_hash.padEnd(66,"0").slice(0,66);
-      const rh=analysisData.report_hash.padEnd(66,"0").slice(0,66);
-      const tx=await contract.notarize(ph, rh, analysisData.title);
-      toast("TX sent: "+tx.hash.slice(0,18)+"…","info");
-      const receipt=await tx.wait();
-      txHash=receipt.transactionHash;
-      blockNum=receipt.blockNumber;
-      gasUsed=receipt.gasUsed?.toString();
-      toast("✅ Confirmed in block #"+blockNum,"success");
-    } else {
-      await sleep(1200);
-      txHash="0x"+rndHex(64)+" (demo)"; blockNum="demo"; gasUsed="21000";
-      toast("Demo mode — connect MetaMask for real TX","warn");
-    }
-    document.getElementById("chainRecord").innerHTML=`
-      <div class="chain-row"><span class="ckey">Status</span><span class="cgreen">✓ Confirmed on Ganache</span></div>
-      <div class="chain-row"><span class="ckey">Exam title</span><span class="cval">${analysisData.title}</span></div>
-      <div class="chain-row"><span class="ckey">From</span><span class="cval">${walletAddr||"demo"}</span></div>
-      <div class="chain-row"><span class="ckey">Contract</span><span class="cval">${CFG.contract}</span></div>
-      <div class="chain-row"><span class="ckey">Paper hash</span><span class="cval">${analysisData.paper_hash.slice(0,22)}…</span></div>
-      <div class="chain-row"><span class="ckey">Report hash</span><span class="cval">${analysisData.report_hash.slice(0,22)}…</span></div>
-      <div class="chain-row"><span class="ckey">Block</span><span class="cval">${blockNum}</span></div>
-      <div class="chain-row"><span class="ckey">Gas used</span><span class="cval">${gasUsed}</span></div>
-      <div class="chain-row"><span class="ckey">TX hash</span><span class="cval">${txHash}</span></div>
-      <div class="chain-row"><span class="ckey">Timestamp</span><span class="cval">${new Date().toLocaleString()}</span></div>
+  function renderResults(d) {
+    // Metrics
+    document.getElementById("metricsGrid").innerHTML = `
+      ${metric("Questions", d.question_count, "")}
+      ${metric("Flesch Score", d.flesch_score, d.readability_label)}
+      ${metric("Grade Level", "G" + d.flesch_grade, "")}
+      ${metric("Avg Sent", d.avg_sentence_length + "w", "")}
+      ${metric("Top Bloom", d.overall_bloom, "")}
+      ${metric("Bias Flags", d.bias_summary.length, d.bias_summary.length > 0 ? "⚠ Review" : "✓ None")}
     `;
-    document.getElementById("chainCard").style.display="block";
-  } catch(e) {
-    toast("TX failed: "+e.message,"error");
-    document.getElementById("notarizeStatus").innerHTML=`<span style="color:var(--error);font-size:.8rem">❌ ${e.message}</span>`;
-  } finally {
-    btn.innerHTML="⛓ Notarize on Ganache"; btn.disabled=false;
-  }
-}
 
-async function verifyChain() {
-  if (!vFile||!CFG.contract) return toast("Set contract address in Config","warn");
-  const hash=document.getElementById("vHash").textContent;
-  try {
-    let result=null;
-    if (provider) {
-      const contract=new ethers.Contract(CFG.contract,ABI,provider);
-      const ph=hash.padEnd(66,"0").slice(0,66);
-      result=await contract.verify(ph);
-    } else { await sleep(500); }
-    const valid=result&&result[0];
-    const el=document.getElementById("verifyResult");
-    el.style.display="block";
-    if (valid) {
-      el.innerHTML=`<div style="color:var(--success);font-weight:700;margin-bottom:.7rem">✅ AUTHENTIC — Found on Ganache</div>
-        <div class="qrow" style="grid-template-columns:120px 1fr"><span style="color:var(--muted)">Setter</span><span style="font-family:monospace;font-size:.78rem">${result[1]}</span></div>
-        <div class="qrow" style="grid-template-columns:120px 1fr"><span style="color:var(--muted)">Notarized at</span><span>${new Date(result[3]*1000).toLocaleString()}</span></div>
-        <div class="qrow" style="grid-template-columns:120px 1fr"><span style="color:var(--muted)">Title</span><span>${result[4]}</span></div>
-        <div class="qrow" style="grid-template-columns:120px 1fr;border-bottom:none"><span style="color:var(--muted)">Report hash</span><span style="font-family:monospace;font-size:.75rem">${result[2].slice(0,22)}…</span></div>`;
-      toast("✅ Paper verified authentic","success");
+    // Hashes
+    document.getElementById("paperHash").textContent = d.paper_hash;
+    document.getElementById("reportHash").textContent = d.report_hash;
+
+    // Bloom distribution
+    const levels = ["remember", "understand", "apply", "analyse", "evaluate", "create"];
+    const counts = {};
+    levels.forEach(l => counts[l] = 0);
+    d.questions.forEach(q => {
+      if (counts[q.bloom_level] !== undefined) counts[q.bloom_level]++;
+    });
+    
+    const maxCount = Math.max(...Object.values(counts), 1);
+    const colors = {
+      remember: "#64748b",
+      understand: "#3b82f6",
+      apply: "#22c55e",
+      analyse: "#f59e0b",
+      evaluate: "#a855f7",
+      create: "#f43f5e"
+    };
+
+    document.getElementById("bloomBars").innerHTML = levels.map(level => `
+      <div class="bloom-row">
+        <div class="bloom-label">${level}</div>
+        <div class="bloom-track">
+          <div class="bloom-fill" style="width: ${(counts[level] / maxCount) * 100}%; background: ${colors[level]}"></div>
+        </div>
+        <div class="bloom-count">${counts[level]}</div>
+      </div>
+    `).join("");
+
+    // Bias
+    const biasSection = document.getElementById("biasSection");
+    if (d.bias_summary && d.bias_summary.length > 0) {
+      biasSection.innerHTML = d.bias_summary.map(b => `<span class="bias-tag">${b}</span>`).join("");
     } else {
-      el.innerHTML=`<div style="color:var(--error);font-weight:700;margin-bottom:.7rem">❌ NOT FOUND — No on-chain record</div>
-        <div style="color:var(--muted);font-size:.83rem">This paper has not been notarized, or has been tampered with since notarization.</div>
-        <div class="hash-box" style="margin-top:.7rem"><span>${hash}</span></div>`;
-      toast("Paper not found on chain","error");
+      biasSection.innerHTML = '<span class="no-bias">✓ No bias flags detected</span>';
     }
-  } catch(e) {
-    toast("Verify error: "+e.message,"error");
+
+    // Question table
+    document.getElementById("qTable").innerHTML = d.questions.map(q => `
+      <div class="q-row">
+        <div class="q-num">Q${q.index}</div>
+        <div class="q-text" title="${q.text}">${q.text.slice(0, 80)}${q.text.length > 80 ? "..." : ""}</div>
+        <div><span class="bloom-pill bloom-${q.bloom_level}">${q.bloom_level}</span></div>
+        <div class="q-status ${q.bias_flags && q.bias_flags.length > 0 ? 'warn' : 'ok'}">
+          ${q.bias_flags && q.bias_flags.length > 0 ? "⚠" : "✓"}
+        </div>
+        <div class="q-status ${d.ambiguous_questions && d.ambiguous_questions.includes(q.index) ? 'warn' : ''}">
+          ${d.ambiguous_questions && d.ambiguous_questions.includes(q.index) ? "⚠ Vague" : ""}
+        </div>
+      </div>
+    `).join("");
   }
-}
 
-async function sha256File(file) {
-  const buf=await file.arrayBuffer();
-  const digest=await crypto.subtle.digest("SHA-256",buf);
-  return "0x"+Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,"0")).join("");
-}
-function fmtSz(b){return b<1048576?(b/1024).toFixed(1)+" KB":(b/1048576).toFixed(2)+" MB";}
-function rndHex(n){return Array.from({length:n},()=>Math.floor(Math.random()*16).toString(16)).join("");}
-function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
-function short(a){return a?a.slice(0,8)+"…"+a.slice(-6):"";}
-function fIcon(n){const e=n.split(".").pop().toLowerCase();return {pdf:"📑",docx:"📝",doc:"📝",txt:"📄"}[e]||"📄";}
-function cp(id){navigator.clipboard?.writeText(document.getElementById(id).textContent);toast("Copied!");}
-function dlReport(){if(!analysisData?.report_pdf_b64)return toast("No report — start the API server","warn");const b=Uint8Array.from(atob(analysisData.report_pdf_b64),c=>c.charCodeAt(0));const blob=new Blob([b],{type:"application/pdf"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="QuizLens_Report.pdf";a.click();}
-function sw(name,btn){document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));document.getElementById("tab-"+name).classList.add("active");btn.classList.add("active");}
-async function testApi(){const el=document.getElementById("cfgStatus");el.textContent="Testing…";try{const r=await fetch(CFG.api+"/");const d=await r.json();el.innerHTML=`<span style="color:var(--success)">✅ NLP API: ${d.message}</span>`;}catch(e){el.innerHTML=`<span style="color:var(--error)">❌ Cannot reach NLP API</span>`;}}
-async function testChain(){const el=document.getElementById("cfgStatus");el.textContent="Testing Ganache…";try{const p=new ethers.providers.JsonRpcProvider(CFG.rpc);const net=await p.getNetwork();const b=await p.getBlockNumber();el.innerHTML=`<span style="color:var(--success)">✅ Ganache connected — Chain ${net.chainId}, Block #${b}</span>`;}catch(e){el.innerHTML=`<span style="color:var(--error)">❌ Cannot reach Ganache at ${CFG.rpc}</span>`;}}
+  function metric(label, value, sub) {
+    return `
+      <div class="metric">
+        <div class="metric-label">${label}</div>
+        <div class="metric-value">${value}</div>
+        ${sub ? `<div class="metric-sub">${sub}</div>` : ""}
+      </div>
+    `;
+  }
 
-let toastT;
-function toast(msg,type="info"){const t=document.getElementById("toast");t.textContent=msg;t.style.background=type==="error"?"#7f1d1d":type==="success"?"#14532d":type==="warn"?"#78350f":"#1e293b";t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),4500);}
+  // ── Notarize ──
+  async function notarize() {
+    if (!analysisData) {
+      showToast("Run analysis first", "error");
+      return;
+    }
 
-if(window.ethereum){window.ethereum.on("accountsChanged",()=>location.reload());window.ethereum.on("chainChanged",()=>location.reload());}
+    if (!CFG.contract) {
+      showToast("Set contract address in Config tab", "error");
+      return;
+    }
 
-window.addEventListener("load",()=>{if(CFG.contract){document.getElementById("cfgContract").value=CFG.contract;toast("Contract address auto-loaded","success");}});
+    const btn = document.getElementById("notarizeBtn");
+    const status = document.getElementById("notarizeStatus");
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Waiting for MetaMask...';
+    status.textContent = "";
+
+    try {
+      let txHash, blockNum, gasUsed;
+
+      if (signer) {
+        const contract = new ethers.Contract(CFG.contract, ABI, signer);
+        
+        // Pad hashes to 32 bytes
+        const paperHash = analysisData.paper_hash.padEnd(66, "0").slice(0, 66);
+        const reportHash = analysisData.report_hash.padEnd(66, "0").slice(0, 66);
+        
+        const tx = await contract.notarize(paperHash, reportHash, analysisData.title);
+        showToast("TX sent: " + tx.hash.slice(0, 18) + "...", "info");
+        
+        const receipt = await tx.wait();
+        txHash = receipt.transactionHash;
+        blockNum = receipt.blockNumber;
+        gasUsed = receipt.gasUsed?.toString();
+        
+        showToast("Confirmed in block #" + blockNum, "success");
+        
+        // Refresh Merkle tree if on that tab
+        if (document.getElementById("tab-merkle").classList.contains("active")) {
+          await refreshMerkleTree();
+        }
+      } else {
+        // Demo mode
+        await sleep(1500);
+        txHash = "0x" + generateHex(64) + " (demo)";
+        blockNum = "demo";
+        gasUsed = "21000";
+        showToast("Demo mode — connect MetaMask for real TX", "error");
+      }
+
+      // Show chain record
+      document.getElementById("chainRecord").innerHTML = `
+        <div class="chain-row"><span class="chain-key">Status</span><span class="chain-val" style="color: #4ade80">✓ Confirmed</span></div>
+        <div class="chain-row"><span class="chain-key">Exam</span><span class="chain-val">${analysisData.title}</span></div>
+        <div class="chain-row"><span class="chain-key">From</span><span class="chain-val">${walletAddr || "demo"}</span></div>
+        <div class="chain-row"><span class="chain-key">Contract</span><span class="chain-val">${CFG.contract.slice(0, 20)}...</span></div>
+        <div class="chain-row"><span class="chain-key">Block</span><span class="chain-val">${blockNum}</span></div>
+        <div class="chain-row"><span class="chain-key">Gas Used</span><span class="chain-val">${gasUsed}</span></div>
+        <div class="chain-row"><span class="chain-key">TX Hash</span><span class="chain-val">${txHash.slice(0, 40)}...</span></div>
+      `;
+      document.getElementById("chainCard").style.display = "block";
+
+    } catch (error) {
+      console.error("Notarize error:", error);
+      let msg = error.message || "Transaction failed";
+      if (msg.includes("user rejected")) {
+        msg = "User rejected the transaction";
+      }
+      status.innerHTML = '<span style="color: var(--error)">❌ ' + msg + '</span>';
+      showToast(msg, "error");
+    } finally {
+      btn.innerHTML = "⛓ Notarize on Blockchain";
+      btn.disabled = false;
+    }
+  }
+
+  // ── Verify ──
+  async function verifyChain() {
+    if (!verifyFile || !CFG.contract) {
+      showToast("Set contract address in Config", "error");
+      return;
+    }
+
+    const resultEl = document.getElementById("verifyResult");
+    const hash = document.getElementById("verifyHash").textContent;
+
+    resultEl.style.display = "block";
+    resultEl.innerHTML = '<div style="text-align: center; padding: 2rem;">Checking blockchain...</div>';
+
+    try {
+      let result = null;
+
+      if (provider) {
+        const contract = new ethers.Contract(CFG.contract, ABI, provider);
+        const paperHash = hash.padEnd(66, "0").slice(0, 66);
+        result = await contract.verify(paperHash);
+      } else {
+        await sleep(1000);
+      }
+
+      const valid = result && result[0];
+
+      if (valid) {
+        resultEl.innerHTML = `
+          <div style="color: var(--success); font-weight: 700; font-size: 1.1rem; margin-bottom: 1rem;">
+            ✅ AUTHENTIC — Found on Blockchain
+          </div>
+          <div class="chain-row"><span class="chain-key">Setter</span><span class="chain-val">${result[1]}</span></div>
+          <div class="chain-row"><span class="chain-key">Notarized</span><span class="chain-val">${new Date(result[3] * 1000).toLocaleString()}</span></div>
+          <div class="chain-row"><span class="chain-key">Title</span><span class="chain-val">${result[4]}</span></div>
+          <div class="chain-row"><span class="chain-key">Report Hash</span><span class="chain-val">${result[2].slice(0, 40)}...</span></div>
+        `;
+        showToast("Paper verified authentic", "success");
+      } else {
+        resultEl.innerHTML = `
+          <div style="color: var(--error); font-weight: 700; font-size: 1.1rem; margin-bottom: 1rem;">
+            ❌ NOT FOUND — No on-chain record
+          </div>
+          <div style="color: var(--muted); font-size: 0.85rem; margin-bottom: 1rem;">
+            This paper has not been notarized, or has been modified since notarization.
+          </div>
+          <div class="hash-box">${hash}</div>
+        `;
+        showToast("Paper not found on chain", "error");
+      }
+    } catch (error) {
+      console.error("Verify error:", error);
+      resultEl.innerHTML = `
+        <div style="color: var(--error);">
+          Verification error: ${error.message}
+        </div>
+      `;
+      showToast("Verify error: " + error.message, "error");
+    }
+  }
+
+  // ── Config Functions ──
+  async function testApi() {
+    const status = document.getElementById("configStatus");
+    status.textContent = "Testing...";
+
+    // Update config from inputs
+    CFG.api = document.getElementById("cfgApi").value.trim();
+
+    try {
+      const response = await fetch(CFG.api + "/");
+      const data = await response.json();
+      status.innerHTML = '<span style="color: var(--success)">✅ NLP API: ' + data.message + '</span>';
+      document.getElementById("apiDot").className = "connection-dot connected";
+      document.getElementById("apiStatus").textContent = "Connected";
+    } catch (error) {
+      status.innerHTML = '<span style="color: var(--error)">❌ Cannot reach NLP API at ' + CFG.api + '</span>';
+      document.getElementById("apiDot").className = "connection-dot error";
+      document.getElementById("apiStatus").textContent = "Offline";
+    }
+  }
+
+  async function testChain() {
+    const status = document.getElementById("configStatus");
+    status.textContent = "Testing connection...";
+
+    // Update config from inputs
+    CFG.rpc = document.getElementById("cfgRpc").value.trim();
+    CFG.contract = document.getElementById("cfgContract").value.trim();
+
+    try {
+      const p = new ethers.providers.JsonRpcProvider(CFG.rpc);
+      const net = await p.getNetwork();
+      const block = await p.getBlockNumber();
+      
+      let contractInfo = "";
+      if (CFG.contract) {
+        try {
+          const contract = new ethers.Contract(CFG.contract, ABI, p);
+          const root = await contract.merkleRoot();
+          const leafCount = await contract.getLeafCount();
+          contractInfo = ` | Contract: ${leafCount} leaves`;
+        } catch (e) {
+          contractInfo = " (contract not verified)";
+        }
+      }
+      
+      status.innerHTML = `<span style="color: var(--success)">✅ Connected — Chain ${net.chainId}, Block #${block}${contractInfo}</span>`;
+      document.getElementById("chainDot").className = "connection-dot connected";
+      document.getElementById("chainStatus").textContent = "Connected";
+    } catch (error) {
+      status.innerHTML = `<span style="color: var(--error)">❌ Cannot reach node at ${CFG.rpc}</span>`;
+      document.getElementById("chainDot").className = "connection-dot error";
+      document.getElementById("chainStatus").textContent = "Error";
+    }
+  }
+
+  // ── Utility Functions ──
+  async function sha256File(file) {
+    const buffer = await file.arrayBuffer();
+    const digest = await crypto.subtle.digest("SHA-256", buffer);
+    return "0x" + Array.from(new Uint8Array(digest))
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("");
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / 1048576).toFixed(2) + " MB";
+  }
+
+  function generateHex(length) {
+    return Array.from({ length }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+  }
+
+  function shortAddr(addr) {
+    return addr ? addr.slice(0, 8) + "..." + addr.slice(-6) : "";
+  }
+
+  function getFileIcon(filename) {
+    const ext = filename.split(".").pop().toLowerCase();
+    const icons = { pdf: "📑", docx: "📝", doc: "📝", txt: "📄" };
+    return icons[ext] || "📄";
+  }
+
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  function copyHash(id) {
+    const text = document.getElementById(id).textContent;
+    navigator.clipboard?.writeText(text);
+    showToast("Hash copied!");
+  }
+
+  function downloadReport() {
+    if (!analysisData?.report_pdf_b64) {
+      showToast("No report available — start NLP API server", "error");
+      return;
+    }
+    
+    const binary = atob(analysisData.report_pdf_b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "QuizLens_Report.pdf";
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showToast("Report downloaded", "success");
+  }
+
+  // ── Toast ──
+  let toastTimeout;
+  function showToast(message, type = "info") {
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.className = type;
+    toast.classList.add("show");
+    
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+      toast.classList.remove("show");
+    }, 4000);
+  }
+
+  // ── Event Listeners ──
+  if (window.ethereum) {
+    window.ethereum.on("accountsChanged", () => location.reload());
+    window.ethereum.on("chainChanged", () => location.reload());
+  }
+
+  // Load config on page load
+  window.addEventListener("load", async () => {
+    if (CFG.contract) {
+      document.getElementById("cfgContract").value = CFG.contract;
+      validateContractAddress(document.getElementById("cfgContract"));
+      showToast("Contract address auto-loaded", "success");
+    }
+    await checkConnections();
+  });
+
+  // ── Connection Status ──
+  async function checkConnections() {
+    // Check API
+    try {
+      const response = await fetch(CFG.api + "/", { method: "GET" });
+      if (response.ok) {
+        document.getElementById("apiDot").className = "connection-dot connected";
+        document.getElementById("apiStatus").textContent = "Connected";
+      } else {
+        throw new Error("API returned " + response.status);
+      }
+    } catch (e) {
+      document.getElementById("apiDot").className = "connection-dot error";
+      document.getElementById("apiStatus").textContent = "Offline";
+    }
+
+    // Check chain
+    if (CFG.contract) {
+      try {
+        const p = new ethers.providers.JsonRpcProvider(CFG.rpc);
+        await p.getNetwork();
+        document.getElementById("chainDot").className = "connection-dot connected";
+        document.getElementById("chainStatus").textContent = "Connected";
+        document.getElementById("merkleContractDot").className = "connection-dot connected";
+        document.getElementById("merkleChainDot").className = "connection-dot connected";
+      } catch (e) {
+        document.getElementById("chainDot").className = "connection-dot error";
+        document.getElementById("chainStatus").textContent = "Error";
+        document.getElementById("merkleContractDot").className = "connection-dot error";
+        document.getElementById("merkleChainDot").className = "connection-dot error";
+      }
+    } else {
+      document.getElementById("chainDot").className = "connection-dot";
+      document.getElementById("chainStatus").textContent = "Not configured";
+    }
+
+    // Update config badge
+    if (!CFG.contract) {
+      document.getElementById("configBadge").style.display = "inline";
+    } else {
+      document.getElementById("configBadge").style.display = "none";
+    }
+  }
+
+  // ── Config Validation ──
+  function validateApiUrl(input) {
+    const hint = document.getElementById("cfgApiHint");
+    try {
+      new URL(input.value);
+      input.className = "";
+      hint.textContent = "Valid URL format";
+      hint.className = "field-hint success";
+      return true;
+    } catch (e) {
+      if (input.value === "") {
+        input.className = "";
+        hint.textContent = "URL for NLP analysis service";
+        hint.className = "field-hint";
+      } else {
+        input.className = "invalid";
+        hint.textContent = "Invalid URL format";
+        hint.className = "field-hint error";
+      }
+      return false;
+    }
+  }
+
+  function validateContractAddress(input) {
+    const hint = document.getElementById("cfgContractHint");
+    const address = input.value.trim();
+    
+    if (address === "") {
+      input.className = "";
+      hint.textContent = "QuizLens smart contract on blockchain";
+      hint.className = "field-hint";
+      return false;
+    }
+    
+    if (/^0x[a-fA-F0-9]{40}$/.test(address)) {
+      input.className = "valid";
+      hint.textContent = "Valid Ethereum address format";
+      hint.className = "field-hint success";
+      return true;
+    } else {
+      input.className = "invalid";
+      hint.textContent = "Must be a valid Ethereum address (0x...)";
+      hint.className = "field-hint error";
+      return false;
+    }
+  }
+
+  function validateRpcUrl(input) {
+    const hint = document.getElementById("cfgRpcHint");
+    try {
+      new URL(input.value);
+      input.className = "";
+      hint.textContent = "Valid URL format";
+      hint.className = "field-hint success";
+      return true;
+    } catch (e) {
+      if (input.value === "") {
+        input.className = "";
+        hint.textContent = "Local blockchain node endpoint";
+        hint.className = "field-hint";
+      } else {
+        input.className = "invalid";
+        hint.textContent = "Invalid URL format";
+        hint.className = "field-hint error";
+      }
+      return false;
+    }
+  }
+
+  // ── Config Save/Load ──
+  function saveConfig() {
+    const api = document.getElementById("cfgApi").value.trim();
+    const contract = document.getElementById("cfgContract").value.trim();
+    const rpc = document.getElementById("cfgRpc").value.trim();
+
+    if (!validateApiUrl(document.getElementById("cfgApi"))) {
+      showToast("Please fix API URL", "error");
+      return;
+    }
+
+    if (contract && !validateContractAddress(document.getElementById("cfgContract"))) {
+      showToast("Please fix contract address", "error");
+      return;
+    }
+
+    if (!validateRpcUrl(document.getElementById("cfgRpc"))) {
+      showToast("Please fix RPC URL", "error");
+      return;
+    }
+
+    const config = {
+      api,
+      contract,
+      rpc,
+      savedAt: new Date().toISOString()
+    };
+
+    localStorage.setItem("quizlens-config", JSON.stringify(config));
+    
+    CFG.api = api;
+    CFG.contract = contract;
+    CFG.rpc = rpc;
+
+    updateSavedConfigDisplay(config);
+    checkConnections();
+    showToast("Configuration saved!", "success");
+  }
+
+  function loadSavedConfig() {
+    const saved = localStorage.getItem("quizlens-config");
+    if (saved) {
+      try {
+        const config = JSON.parse(saved);
+        document.getElementById("cfgApi").value = config.api || "http://localhost:8000";
+        document.getElementById("cfgContract").value = config.contract || "";
+        document.getElementById("cfgRpc").value = config.rpc || "http://127.0.0.1:8545";
+        
+        CFG.api = config.api || CFG.api;
+        CFG.contract = config.contract || CFG.contract;
+        CFG.rpc = config.rpc || CFG.rpc;
+
+        updateSavedConfigDisplay(config);
+        validateApiUrl(document.getElementById("cfgApi"));
+        if (CFG.contract) validateContractAddress(document.getElementById("cfgContract"));
+        validateRpcUrl(document.getElementById("cfgRpc"));
+      } catch (e) {
+        console.error("Failed to load config:", e);
+      }
+    }
+  }
+
+  function loadConfig() {
+    loadSavedConfig();
+    checkConnections();
+    showToast("Configuration loaded", "info");
+  }
+
+  function clearSavedConfig() {
+    localStorage.removeItem("quizlens-config");
+    document.getElementById("savedApi").textContent = "-";
+    document.getElementById("savedContract").textContent = "-";
+    document.getElementById("savedRpc").textContent = "-";
+    document.getElementById("savedTime").textContent = "Never";
+    showToast("Saved configuration cleared", "info");
+  }
+
+  function updateSavedConfigDisplay(config) {
+    document.getElementById("savedApi").textContent = config.api || "-";
+    document.getElementById("savedContract").textContent = config.contract || "-";
+    document.getElementById("savedRpc").textContent = config.rpc || "-";
+    document.getElementById("savedTime").textContent = config.savedAt 
+      ? new Date(config.savedAt).toLocaleString() 
+      : "Never";
+  }
+
+  // ── Merkle Tree Functions ──
+  async function refreshMerkleTree() {
+    if (!CFG.contract) {
+      showToast("Set contract address in Config tab", "error");
+      return;
+    }
+
+    const btn = document.getElementById("refreshMerkleBtn");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Loading...';
+
+    try {
+      const p = new ethers.providers.JsonRpcProvider(CFG.rpc);
+      const contract = new ethers.Contract(CFG.contract, ABI, p);
+
+      const [root, leafCount] = await Promise.all([
+        contract.merkleRoot(),
+        contract.getLeafCount()
+      ]);
+
+      document.getElementById("merkleEmpty").style.display = "none";
+      document.getElementById("merkleContent").style.display = "block";
+      document.getElementById("merkleProofCard").style.display = "block";
+
+      document.getElementById("merkleRootDisplay").textContent = root;
+      document.getElementById("merkleContractDisplay").textContent = CFG.contract;
+      document.getElementById("merkleLeafCount").textContent = leafCount.toString();
+      
+      const depth = Math.ceil(Math.log2(Math.max(leafCount, 1))) + 1;
+      document.getElementById("merkleTreeDepth").textContent = depth.toString();
+      document.getElementById("merkleLastUpdate").textContent = new Date().toLocaleTimeString();
+
+      // Fetch all leaves
+      const leaves = [];
+      for (let i = 0; i < leafCount; i++) {
+        const leaf = await contract.notarizedHashes(i);
+        leaves.push(leaf);
+      }
+
+      // Build and render tree
+      const tree = buildMerkleTree(leaves);
+      renderMerkleTree(tree, root);
+
+      showToast("Merkle tree updated", "success");
+
+    } catch (error) {
+      console.error("Merkle tree error:", error);
+      showToast("Error loading Merkle tree: " + error.message, "error");
+      document.getElementById("merkleEmpty").style.display = "block";
+      document.getElementById("merkleContent").style.display = "none";
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = "🔄 Refresh Tree";
+    }
+  }
+
+  function buildMerkleTree(leaves) {
+    if (leaves.length === 0) return null;
+    
+    const hash = (a, b) => {
+      const arr = [a, b].sort();
+      return ethers.utils.keccak256(
+        ethers.utils.defaultAbiCoder.encode(["bytes32", "bytes32"], arr)
+      );
+    };
+
+    let currentLevel = [...leaves];
+    const levels = [currentLevel];
+
+    while (currentLevel.length > 1) {
+      const nextLevel = [];
+      for (let i = 0; i < currentLevel.length; i += 2) {
+        const left = currentLevel[i];
+        const right = i + 1 < currentLevel.length ? currentLevel[i + 1] : currentLevel[i];
+        nextLevel.push(hash(left, right));
+      }
+      currentLevel = nextLevel;
+      levels.push(currentLevel);
+    }
+
+    return levels;
+  }
+
+  function renderMerkleTree(tree, root) {
+    const container = document.getElementById("merkleTree");
+    container.innerHTML = "";
+
+    if (!tree || tree.length === 0) {
+      container.innerHTML = '<div class="empty-state">No notarized papers yet</div>';
+      return;
+    }
+
+    // Reverse to show root at top
+    const reversed = [...tree].reverse();
+    
+    reversed.forEach((level, levelIndex) => {
+      const levelDiv = document.createElement("div");
+      levelDiv.className = "merkle-level";
+      
+      const actualLevel = tree.length - 1 - levelIndex;
+      
+      level.forEach((node, nodeIndex) => {
+        const nodeDiv = document.createElement("div");
+        nodeDiv.className = "merkle-node";
+        nodeDiv.title = node;
+        
+        if (actualLevel === 0) {
+          nodeDiv.classList.add("root");
+          nodeDiv.textContent = truncateHash(node) + " (ROOT)";
+        } else if (actualLevel === tree.length - 1) {
+          nodeDiv.classList.add("leaf");
+          nodeDiv.textContent = truncateHash(node) + " #" + (nodeIndex + 1);
+        } else {
+          nodeDiv.textContent = truncateHash(node);
+        }
+
+        nodeDiv.onclick = () => highlightPath(nodeDiv, node);
+        levelDiv.appendChild(nodeDiv);
+      });
+
+      container.appendChild(levelDiv);
+
+      // Add connector if not last
+      if (levelIndex < reversed.length - 1) {
+        const connector = document.createElement("div");
+        connector.className = "merkle-connector";
+        container.appendChild(connector);
+      }
+    });
+  }
+
+  function truncateHash(hash) {
+    if (!hash || hash.length < 16) return hash || "";
+    return hash.slice(0, 8) + "..." + hash.slice(-6);
+  }
+
+  function highlightPath(nodeDiv, hash) {
+    // Reset all highlights
+    document.querySelectorAll(".merkle-node").forEach(n => n.classList.remove("highlighted"));
+    nodeDiv.classList.add("highlighted");
+    
+    showToast("Hash: " + hash, "info");
+  }
+
+  function expandAllNodes() {
+    document.querySelectorAll(".merkle-node").forEach(n => {
+      n.style.maxWidth = "none";
+      n.style.overflow = "visible";
+      n.style.whiteSpace = "normal";
+    });
+    
+    setTimeout(() => {
+      document.querySelectorAll(".merkle-node").forEach(n => {
+        if (!n.classList.contains("highlighted")) {
+          n.style.maxWidth = "120px";
+          n.style.overflow = "hidden";
+          n.style.whiteSpace = "nowrap";
+        }
+      });
+    }, 3000);
+    
+    showToast("Nodes expanded for 3 seconds", "info");
+  }
+
+  function copyMerkleRoot() {
+    const root = document.getElementById("merkleRootDisplay").textContent;
+    navigator.clipboard?.writeText(root);
+    showToast("Merkle root copied!", "success");
+  }
+
+  async function verifyMerkleProof() {
+    const leafHash = document.getElementById("proofLeafHash").value.trim();
+    const resultDiv = document.getElementById("proofResult");
+
+    if (!leafHash) {
+      resultDiv.innerHTML = '<div style="color: var(--error);">Please enter a leaf hash</div>';
+      return;
+    }
+
+    if (!CFG.contract) {
+      resultDiv.innerHTML = '<div style="color: var(--error);">Contract not configured</div>';
+      return;
+    }
+
+    resultDiv.innerHTML = '<div style="color: var(--muted);">Verifying...</div>';
+
+    try {
+      const p = new ethers.providers.JsonRpcProvider(CFG.rpc);
+      const contract = new ethers.Contract(CFG.contract, ABI, p);
+      
+      const [root, leafCount] = await Promise.all([
+        contract.merkleRoot(),
+        contract.getLeafCount()
+      ]);
+
+      // Find if leaf exists
+      let found = false;
+      for (let i = 0; i < leafCount; i++) {
+        const leaf = await contract.notarizedHashes(i);
+        if (leaf.toLowerCase() === leafHash.toLowerCase()) {
+          found = true;
+          break;
+        }
+      }
+
+      if (found) {
+        resultDiv.innerHTML = `
+          <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 10px; padding: 1rem;">
+            <div style="color: var(--success); font-weight: 600; margin-bottom: 0.5rem;">✓ Leaf Found in Tree</div>
+            <div style="font-size: 0.8rem; color: var(--muted);">This paper has been notarized and is part of the Merkle tree.</div>
+            <div style="margin-top: 0.5rem; font-size: 0.75rem;">
+              <span style="color: var(--muted);">Root:</span> 
+              <span style="color: var(--text);">${truncateHash(root)}</span>
+            </div>
+          </div>
+        `;
+        showToast("Leaf verified in Merkle tree", "success");
+      } else {
+        resultDiv.innerHTML = `
+          <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 1rem;">
+            <div style="color: var(--error); font-weight: 600; margin-bottom: 0.5rem;">✗ Leaf Not Found</div>
+            <div style="font-size: 0.8rem; color: var(--muted);">This paper hash is not in the current Merkle tree.</div>
+          </div>
+        `;
+        showToast("Leaf not found in tree", "error");
+      }
+
+    } catch (error) {
+      console.error("Verify proof error:", error);
+      resultDiv.innerHTML = `<div style="color: var(--error);">Error: ${error.message}</div>`;
+      showToast("Verification error", "error");
+    }
+  }
+
+  // Update Merkle tree when tab is opened
+  const originalSwitchTab = switchTab;
+  switchTab = function(name, btn) {
+    originalSwitchTab(name, btn);
+    if (name === "merkle" && CFG.contract) {
+      refreshMerkleTree();
+    }
+  };
 </script>
+
 </body>
 </html>
